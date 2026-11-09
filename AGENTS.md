@@ -132,3 +132,6 @@ packages/*/node_modules && pnpm install`) and a clean rebuild (`rm -rf apps/web/
 - E2E in `apps/web/e2e`: `home.spec.ts` (hero, cards, theme toggle, contact toast) and
   `app-structure.spec.ts` (route groups, 404, sitemap/robots/OG). Playwright `reuseExistingServer`
   reuses any server on :3000 — kill stray `next start` processes before running e2e locally.
+- Pushing to `origin` (GitHub): `GITHUB_TOKEN` is read-only here and is rejected with 403;
+  use `GITHUB_PAT` instead, e.g.
+  `git push https://x-access-token:$GITHUB_PAT@github.com/openlynkid/Turborepo-starterkit.git main`.
