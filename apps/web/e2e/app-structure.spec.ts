@@ -76,6 +76,40 @@ test.describe("security", () => {
     );
     expect(response.headers()["x-powered-by"]).toBeUndefined();
   });
+
+  test("sends a content security policy", async ({ request }) => {
+    const response = await request.get("/");
+    const csp = response.headers()["content-security-policy"];
+
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("object-src 'none'");
+  });
+});
+
+test.describe("health", () => {
+  test("reports the app as ok", async ({ request }) => {
+    const response = await request.get("/api/health");
+
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body.status).toBe("ok");
+  });
+});
+
+test.describe("auth", () => {
+  test("shows the login page when auth is not configured", async ({ page }) => {
+    await page.goto("/login");
+    await expect(page.getByText("Sign in", { exact: true })).toBeVisible();
+    await expect(page.getByText("Continue without auth")).toBeVisible();
+  });
+
+  test("leaves the app open when auth is not configured", async ({ page }) => {
+    await page.goto("/dashboard");
+    await expect(
+      page.getByRole("heading", { name: "Dashboard" }),
+    ).toBeVisible();
+  });
 });
 
 test.describe("component library", () => {

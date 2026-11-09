@@ -2,12 +2,14 @@
  * Single source of truth for site-wide metadata. Referenced by the root
  * layout, `sitemap.ts`, `robots.ts` and the Open Graph image.
  */
+import { clientEnv } from "@/client-env";
+
 export const site = {
   name: "Turborepo Starter Kit",
   title: "Turborepo Starter Kit",
   description:
     "A production-ready Turborepo starter kit built with pnpm, Next.js App Router, Tailwind CSS v4 and shadcn/ui.",
-  url: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+  url: clientEnv.NEXT_PUBLIC_APP_URL,
   locale: "en_US",
 } as const;
 

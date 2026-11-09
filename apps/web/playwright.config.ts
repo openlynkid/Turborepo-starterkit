@@ -25,5 +25,8 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    // Functional e2e tests share one server and IP; keep the limiter out of
+    // their way. The rate limiter itself is covered by unit tests.
+    env: { RATE_LIMIT_MAX: "1000" },
   },
 });
