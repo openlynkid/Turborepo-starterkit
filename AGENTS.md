@@ -44,3 +44,19 @@ Turborepo starter kit: pnpm workspaces + Next.js (App Router) + Tailwind CSS v4 
   Install browser once: `pnpm --filter web exec playwright install chromium`.
 - `packages/ui` uses `moduleResolution: "Bundler"` (consumed as source by Next, not built).
 - Turbo tasks: build, lint, check-types, test, test:coverage, test:e2e, dev, clean.
+
+## Phase 3 — Env & validators
+
+- `packages/validators` — shared Zod v4 schemas (`src/schemas/*`), barrel `src/index.ts`.
+  Exposed as `@repo/validators` and `@repo/validators/schemas/*`. Node-env Vitest.
+- `packages/env` — t3-env (`@t3-oss/env-core`) factories `createServerEnv(runtimeEnv?)` /
+  `createClientEnv(runtimeEnv)`. Schemas live in `src/core.ts`. Passing the env object
+  explicitly keeps it testable (no reliance on `process.env`).
+- `apps/web/env.ts` — `env` (server) and `clientEnv` (NEXT_PUBLIC_*). Client values must be
+  referenced statically so Next inlines them.
+- Example flow: `apps/web/lib/contact.ts` (validation + logic) is used by both the route
+  handler `app/api/contact/route.ts` and the server action `lib/actions.ts`.
+- Zod v4 note: `z.email()` validates immediately, so normalize first via
+  `z.string().trim().toLowerCase().pipe(z.email())`.
+- `apps/web` now has Vitest (node env) for `lib/**` and `app/**` tests.
+- Packages with a `check-types` using `process.env` need `@types/node` devDependency.

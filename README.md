@@ -10,6 +10,8 @@ This monorepo is managed by [Turborepo](https://turborepo.dev) and [pnpm workspa
 
 - `apps/web` – [Next.js](https://nextjs.org) app (App Router, React 19, Tailwind CSS v4)
 - `packages/ui` – shared React component library with [shadcn/ui](https://ui.shadcn.com) components and Tailwind theme
+- `packages/env` – type-safe environment variable validation ([t3-env](https://env.t3.gg) + Zod)
+- `packages/validators` – shared [Zod](https://zod.dev) schemas for forms and API input
 - `packages/eslint-config` – shared ESLint configurations
 - `packages/typescript-config` – shared `tsconfig.json` presets
 
@@ -59,7 +61,8 @@ The web app runs at [http://localhost:3000](http://localhost:3000).
 ## Testing
 
 Unit tests use [Vitest](https://vitest.dev) with Testing Library and live next to the
-code as `*.test.ts(x)` files (for example `packages/ui/src/components/ui/button.test.tsx`).
+code as `*.test.ts(x)` files (for example `packages/ui/src/components/ui/button.test.tsx`,
+`packages/validators/src/schemas/contact.test.ts`, `apps/web/lib/contact.test.ts`).
 
 ```bash
 pnpm test            # run all unit tests once
@@ -99,6 +102,38 @@ Shared dependency versions are declared once in the `catalog` section of
 
 Copy `.env.example` to `.env` and fill in the values. `.env*` files are ignored by Git
 and picked up by Turborepo as task inputs.
+
+Variables are validated at runtime with [`@repo/env`](./packages/env) (t3-env + Zod), so a
+missing or malformed value fails fast with a clear error:
+
+```ts
+// apps/web/env.ts
+import { createClientEnv, createServerEnv } from "@repo/env";
+
+export const env = createServerEnv();
+export const clientEnv = createClientEnv({
+  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+});
+```
+
+Add new variables to the schemas in `packages/env/src/core.ts`. Server variables stay on
+the server; only `NEXT_PUBLIC_*` values reach the browser.
+
+## Validators
+
+[`@repo/validators`](./packages/validators) holds shared [Zod](https://zod.dev) schemas so
+the same rules apply on the client, in route handlers, and in server actions:
+
+```ts
+import { contactFormSchema } from "@repo/validators";
+
+const parsed = contactFormSchema.safeParse(input);
+if (!parsed.success) {
+  // parsed.error.issues -> field-level errors
+}
+```
+
+See `apps/web/app/api/contact/route.ts` and `apps/web/lib/contact.ts` for a working example.
 
 ## Working with shadcn/ui
 

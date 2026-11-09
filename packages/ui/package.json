@@ -38,12 +38,12 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "^6.2.1",
-    "@vitest/coverage-v8": "^5.1.0",
+    "@vitest/coverage-v8": "catalog:",
     "eslint": "catalog:",
     "jsdom": "^31.0.0",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
-    "vitest": "^5.1.0"
+    "vitest": "catalog:"
   },
   "peerDependencies": {
     "react": "^19.0.0",
