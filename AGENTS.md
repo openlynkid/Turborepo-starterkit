@@ -243,3 +243,34 @@ All features stay **opt-in**, so local dev and CI need no new setup.
   `playwright.config.ts` raises `RATE_LIMIT_MAX` for the shared e2e server so
   functional tests don't trip the limiter (the limiter has its own unit tests).
   Full suite: 41 unit tests + 23 e2e, all green.
+
+## Audit follow-ups (2026-11, second pass)
+
+- **Login rate limiting.** The contact endpoint was limited but login was not.
+  `lib/rate-limit.ts` now exports `loginRateLimiter`
+  (`LOGIN_RATE_LIMIT_MAX` / `LOGIN_RATE_LIMIT_WINDOW_MS`, default 10 / 15 min),
+  applied in `lib/auth-actions.ts` before credential verification.
+- **Auth e2e.** `apps/web/e2e/auth.spec.ts` runs against a **second** server on
+  `:3001` started with auth env (`chromium-auth` project in `playwright.config.ts`);
+  the default project ignores that spec. Covers redirect, bad credentials, and
+  sign-in/sign-out. `CardTitle` is a `div`, not a heading — assert on labels, and
+  scope `role="alert"` to `p[role='alert']` (Next's route announcer also has
+  `role="alert"`).
+- **Strict CSP (nonce).** `apps/web/proxy.ts` now generates a per-request nonce
+  and sets `Content-Security-Policy` with
+  `script-src 'self' 'nonce-…' 'strict-dynamic'` (no `'unsafe-inline'`); the
+  static headers stay in `next.config.js`. The root layout reads `x-nonce` and
+  passes it to `ThemeProvider` (`next-themes` supports a `nonce` prop). A nonce
+  forces **dynamic rendering** — the build route table flips `/`, `/about`,
+  `/components`, `/settings` from `○` to `ƒ`. That is the deliberate cost.
+  `style-src` keeps `'unsafe-inline'` for inline style attributes. Dev keeps
+  `'unsafe-eval'` (React needs it). e2e asserts the nonce is present, that
+  `'unsafe-inline'` is gone from `script-src`, and that a browser run logs no CSP
+  violations.
+- **Gitignore.** Root `.gitignore` had duplicated `coverage`/Playwright blocks;
+  deduped. `apps/web/.gitignore` already ignores `/playwright-report/`.
+- Full suite after this pass: **79 unit tests + 28 e2e**, all green; `pnpm audit`
+  clean.
+- **Dev origins.** Next 16 blocks cross-origin dev assets; set
+  `ALLOWED_DEV_ORIGINS` (comma-separated hostnames, declared in `turbo.json`
+  `globalEnv`) when exposing `next dev` via a tunnel.
