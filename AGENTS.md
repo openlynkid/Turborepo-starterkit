@@ -106,3 +106,29 @@ Turborepo starter kit: pnpm workspaces + Next.js (App Router) + Tailwind CSS v4 
 - Migrations must be committed. To apply: `pnpm --filter @repo/db db:migrate`.
 - Verified end-to-end against a real Postgres 17: `drizzle-kit migrate` applies the SQL, and
   a `POST /api/contact` with `DATABASE_URL` set returns the row `id` and writes the row.
+
+## Phase 5 — App structure & UX
+
+- Route groups in `apps/web/app`: `(marketing)` (site header + footer) and `(app)` (sidebar +
+  top bar). Groups do not change URLs; the landing page lives in `(marketing)/page.tsx`.
+- App shell: `components/site-header.tsx`, `site-footer.tsx`, `app-nav.tsx`,
+  `app-mobile-nav.tsx`; site metadata in `lib/site.ts`, date formatting in `lib/format.ts`.
+- Feedback via Sonner. `packages/ui/src/components/ui/sonner.tsx` re-exports it; `<Toaster />`
+  is mounted once in `apps/web/app/layout.tsx`. Client code calls `toast()` from `sonner`,
+  so apps that use toasts need `sonner` in their own `dependencies`.
+- Special files: `error.tsx`, `global-error.tsx`, `not-found.tsx`, `(marketing)/loading.tsx`,
+  `(app)/dashboard/loading.tsx`, plus SEO routes `sitemap.ts`, `robots.ts`, `manifest.ts`,
+  `opengraph-image.tsx` (all convention-based, no static files).
+- `dashboard` and `messages` set `export const dynamic = "force-dynamic"` so they read the
+  database at request time instead of a build-time snapshot.
+- **React dedupe is mandatory.** `pnpm-workspace.yaml` `overrides: { react: 19.2.8,
+react-dom: 19.2.8 }` pins one React across the tree. Without it, `@floating-ui/react-dom`
+  (via `radix-ui`) pulls a newer React minor and the `@repo/ui` `Toaster` silently stops
+  rendering — it mounts its own React copy, so `toast()` calls never appear. Keep the override
+  in sync with the catalog versions.
+- After changing overrides, do a clean install (`rm -rf node_modules apps/*/node_modules
+packages/*/node_modules && pnpm install`) and a clean rebuild (`rm -rf apps/web/.next`),
+  or the old server keeps serving a stale `.next` and 500s on dynamic routes.
+- E2E in `apps/web/e2e`: `home.spec.ts` (hero, cards, theme toggle, contact toast) and
+  `app-structure.spec.ts` (route groups, 404, sitemap/robots/OG). Playwright `reuseExistingServer`
+  reuses any server on :3000 — kill stray `next start` processes before running e2e locally.

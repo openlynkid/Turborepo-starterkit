@@ -2,6 +2,15 @@ packages:
   - "apps/*"
   - "packages/*"
 
+# Force a single React/React DOM version across the workspace. Transitive
+# dependencies (e.g. @floating-ui/react-dom via radix-ui) would otherwise pull
+# a newer minor, which breaks libraries that rely on React context or module
+# state shared across packages — in this repo that silently disabled sonner
+# toasts rendered by @repo/ui.
+overrides:
+  react: "19.2.8"
+  react-dom: "19.2.8"
+
 # Dependencies allowed to run install scripts (pnpm 11 blocks them by default).
 # esbuild needs its postinstall to fetch the platform binary.
 allowBuilds:
@@ -19,6 +28,7 @@ catalog:
   clsx: ^2.1.1
   tailwind-merge: ^2.6.0
   radix-ui: ^1.8.1
+  sonner: ^2.0.7
   tw-animate-css: ^1.2.0
   zod: ^4.6.7
   vitest: ^5.1.0

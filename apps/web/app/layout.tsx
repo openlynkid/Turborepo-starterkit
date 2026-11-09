@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { ThemeProvider } from "@repo/ui/components/theme-provider";
+import { Toaster } from "@repo/ui/components/ui/sonner";
+
+import { site } from "@/lib/site";
 
 import "./globals.css";
 
@@ -16,9 +19,26 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Turborepo Starter Kit",
-  description:
-    "A Turborepo starter kit built with pnpm, Next.js, Tailwind CSS, and shadcn/ui.",
+  metadataBase: new URL(site.url),
+  title: {
+    default: site.title,
+    template: `%s · ${site.name}`,
+  },
+  description: site.description,
+  applicationName: site.name,
+  openGraph: {
+    type: "website",
+    locale: site.locale,
+    url: site.url,
+    siteName: site.name,
+    title: site.title,
+    description: site.description,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: site.title,
+    description: site.description,
+  },
 };
 
 export default function RootLayout({
@@ -38,6 +58,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <Toaster richColors closeButton />
         </ThemeProvider>
       </body>
     </html>

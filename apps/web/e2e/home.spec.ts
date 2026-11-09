@@ -17,6 +17,7 @@ test.describe("home page", () => {
       "Turborepo",
       "pnpm workspaces",
       "shadcn/ui",
+      "Get in touch",
     ]);
   });
 
@@ -31,5 +32,18 @@ test.describe("home page", () => {
     await expect
       .poll(() => page.locator("html").getAttribute("class"))
       .not.toBe(initial);
+  });
+
+  test("submits the contact form and shows a toast", async ({ page }) => {
+    await page.goto("/");
+
+    await page.getByLabel("Name").fill("Grace Hopper");
+    await page.getByLabel("Email").fill("grace@example.com");
+    await page
+      .getByLabel("Message")
+      .fill("I would like to learn more about this starter kit.");
+    await page.getByRole("button", { name: "Send message" }).click();
+
+    await expect(page.getByText("Message sent")).toBeVisible();
   });
 });
