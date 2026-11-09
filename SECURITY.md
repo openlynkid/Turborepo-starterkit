@@ -34,3 +34,20 @@ we investigate and will credit you in the fix unless you prefer otherwise.
 pnpm enforces a supply-chain policy: packages published within the last 24 hours
 are rejected unless explicitly excluded. Dependencies are updated through
 [Renovate](./renovate.json) and reviewed like any other change.
+
+`pnpm-workspace.yaml` also pins a few transitive dependencies through
+`overrides` when no upstream release has picked up the fix yet (for example
+`esbuild` and `minimatch`). Each override is commented with the advisory it
+addresses. Re-check them with `pnpm audit` whenever dependencies are bumped.
+
+## Baseline hardening
+
+- The web app sends `X-Content-Type-Options`, `X-Frame-Options`,
+  `Referrer-Policy`, `Strict-Transport-Security` and `Permissions-Policy`
+  headers, and disables the `X-Powered-By` header (see
+  `apps/web/next.config.js`). These are covered by an end-to-end test.
+- All external input (the contact form and `POST /api/contact`) is validated
+  with the shared Zod schema on the server before it reaches the database.
+- The contact API does not authenticate or rate-limit callers. If you expose it
+  publicly, add rate limiting at the edge (for example Vercel Firewall) or in a
+  middleware before deploying.

@@ -174,3 +174,34 @@ packages/*/node_modules && pnpm install`) and a clean rebuild (`rm -rf apps/web/
   `docs/architecture.md`, `docs/components.md`.
 - `license: MIT` added to the root and to each publishable package manifest.
 - README gained Documentation, Releases and Deployment sections plus a License footer.
+
+## Security audit (2026-11)
+
+Findings and the resulting changes. Re-run `pnpm audit` after any dependency bump.
+
+- **Next.js advisories (critical/high).** `next` 16.3.8 was affected by
+  GHSA-2464-fhr4-w9xw and GHSA-673q-mjm6-r5xr (unauthenticated RCE, patched in
+  16.4.1) and GHSA-p3m5-59mp-jv5r (server-action DoS, patched in 16.4.1).
+  The catalog now pins `next: 16.4.5` (covers `eslint-config-next` too).
+- **Transitive advisories with no upstream fix.** `esbuild@0.18.20` came in via
+  `drizzle-kit > @esbuild-kit/core-utils` (GHSA-67mh-4wv8-2f99) and
+  `minimatch@10.x` via `eslint > @eslint/config-array`
+  (GHSA-g3hv-75wg-m249). Neither upstream has released a fix, so
+  `pnpm-workspace.yaml` pins them through `overrides` (`esbuild: ^0.25.0`,
+  `minimatch: ^11.0.1`). `pnpm audit` is now clean.
+- **Security headers.** `apps/web/next.config.js` sets
+  `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`,
+  `Strict-Transport-Security`, `Permissions-Policy` and disables
+  `X-Powered-By`. Covered by the `security` e2e block in
+  `apps/web/e2e/app-structure.spec.ts`. There is no CSP yet — add one before
+  shipping if the app renders third-party content.
+- **CI permissions.** `.github/workflows/ci.yml` now declares
+  `permissions: contents: read`. `release.yml` keeps `contents/pull-requests:
+write` because changesets opens a PR.
+- **Known gaps (accepted for a starter kit).** `POST /api/contact` and the
+  contact server action have no auth, rate limiting or CAPTCHA; a public
+  deployment should add them. Documented in `SECURITY.md`.
+- Clean by inspection: no committed secrets, `.env*` ignored (only
+  `.env.example` tracked), Drizzle queries are parameterized, no
+  `dangerouslySetInnerHTML`/`eval`, env validated with t3-env + Zod and
+  server/client values kept separate.
