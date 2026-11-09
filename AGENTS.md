@@ -18,6 +18,7 @@ Turborepo starter kit: pnpm workspaces + Next.js (App Router) + Tailwind CSS v4 
 - `apps/web` — Next.js app. Imports UI from `@repo/ui`.
 - `packages/ui` — shared components. shadcn components live in `src/components/ui`.
   Theme + Tailwind `@source` scanning live in `src/styles/globals.css`.
+- `packages/db` — Drizzle ORM schema, migrations and repositories (Postgres).
 - `packages/eslint-config`, `packages/typescript-config` — shared configs.
 
 ## Commands
@@ -81,3 +82,27 @@ Turborepo starter kit: pnpm workspaces + Next.js (App Router) + Tailwind CSS v4 
 - Always regenerate the lockfile with the pinned pnpm: `corepack pnpm clean --lockfile && corepack pnpm install`.
 - Local `pnpm` on this machine is 9.15.4; use `corepack pnpm ...` to match CI. (CI uses pnpm/action-setup.)
 - Lockfile is `lockfileVersion: '9.0'`; pnpm 11 still writes v9 format.
+
+## Phase 4 — Data layer (Drizzle + Postgres)
+
+- `packages/db` — `@repo/db`. Schema `src/schema/*`, repositories `src/repositories/*`,
+  client factory `src/client.ts`, migrations in `drizzle/` (drizzle-kit generate output).
+- Subpath exports: `@repo/db` (client + repositories + schema), `@repo/db/client`,
+  `@repo/db/schema`, `@repo/db/repositories/*`, `@repo/db/migrate`, `@repo/db/testing`.
+- `src/migrate.ts` reads files from disk, so it is intentionally NOT in the barrel `index.ts`
+  (bundling it into a Next route fails: `Module not found: Can't resolve '../drizzle'`).
+- Tests use PGlite (`@electric-sql/pglite`) via `createTestDb()` in `src/testing.ts`: it runs
+  the real migrations against an in-process Postgres, so no server is needed. Keep
+  `drizzle-orm/pglite` imports out of the production entry.
+- Production driver is postgres.js (`src/client.ts`, `createDbClient(url)`); `postgres` is
+  listed in `next.config.js` `serverExternalPackages`.
+- `DATABASE_URL` is optional. `apps/web/lib/db.ts` `getDb()`/`getContactRepository()` return
+  `null` without it, so `submitContact` validates and skips writes — dev/CI need no database.
+- `submitContact(input, { repository })` persists when a repository is passed; the route
+  handler and server action both inject `getContactRepository()`.
+- `drizzle.config.ts` sets `out: ./drizzle`, `dialect: postgresql`, `schema: ./src/schema/*.ts`.
+- pnpm 11 blocks install scripts; `pnpm-workspace.yaml` `allowBuilds: { esbuild: true }` is
+  required so esbuild's postinstall can fetch its binary.
+- Migrations must be committed. To apply: `pnpm --filter @repo/db db:migrate`.
+- Verified end-to-end against a real Postgres 17: `drizzle-kit migrate` applies the SQL, and
+  a `POST /api/contact` with `DATABASE_URL` set returns the row `id` and writes the row.

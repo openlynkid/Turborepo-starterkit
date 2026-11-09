@@ -5,6 +5,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./", import.meta.url)),
+      "@repo/db": fileURLToPath(
+        new URL("../../packages/db/src", import.meta.url),
+      ),
       "@repo/ui": fileURLToPath(
         new URL("../../packages/ui/src", import.meta.url),
       ),

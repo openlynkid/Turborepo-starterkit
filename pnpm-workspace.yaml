@@ -2,6 +2,11 @@ packages:
   - "apps/*"
   - "packages/*"
 
+# Dependencies allowed to run install scripts (pnpm 11 blocks them by default).
+# esbuild needs its postinstall to fetch the platform binary.
+allowBuilds:
+  esbuild: true
+
 # Centralized dependency versions. Reference these with `catalog:` in any
 # package.json to keep versions consistent across the monorepo.
 catalog:
@@ -20,6 +25,10 @@ catalog:
   "@vitest/coverage-v8": ^5.1.0
   "@t3-oss/env-nextjs": ^0.13.11
   "@t3-oss/env-core": ^0.13.11
+  drizzle-orm: ^0.45.4
+  drizzle-kit: ^0.31.11
+  postgres: ^4.1.0
+  "@electric-sql/pglite": ^0.5.15
   tailwindcss: ^4.1.0
   "@tailwindcss/postcss": ^4.1.0
   typescript: 7.0.2

@@ -16,6 +16,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@repo/db": "workspace:^",
     "@repo/env": "workspace:^",
     "@repo/ui": "workspace:*",
     "@repo/validators": "workspace:^",
@@ -27,6 +28,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "catalog:",
     "@playwright/test": "^1.65.0",
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",

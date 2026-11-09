@@ -12,6 +12,7 @@ This monorepo is managed by [Turborepo](https://turborepo.dev) and [pnpm workspa
 
 - `apps/web` – [Next.js](https://nextjs.org) app (App Router, React 19, Tailwind CSS v4)
 - `packages/ui` – shared React component library with [shadcn/ui](https://ui.shadcn.com) components and Tailwind theme
+- `packages/db` – [Drizzle ORM](https://orm.drizzle.team) schema, migrations and repositories for PostgreSQL
 - `packages/env` – type-safe environment variable validation ([t3-env](https://env.t3.gg) + Zod)
 - `packages/validators` – shared [Zod](https://zod.dev) schemas for forms and API input
 - `packages/eslint-config` – shared ESLint configurations
@@ -28,6 +29,7 @@ Each package and app is 100% [TypeScript](https://www.typescriptlang.org/).
 - **ESLint** + **Prettier** – linting and formatting
 - **Husky** + **lint-staged** + **Commitlint** – Git hooks and Conventional Commits
 - **Vitest** + **Testing Library** – unit tests
+- **Drizzle ORM** + **postgres.js** – typed SQL and migrations for PostgreSQL
 - **Playwright** – end-to-end tests
 
 ## Requirements
@@ -160,6 +162,37 @@ if (!parsed.success) {
 ```
 
 See `apps/web/app/api/contact/route.ts` and `apps/web/lib/contact.ts` for a working example.
+
+## Data layer
+
+[`@repo/db`](./packages/db) wraps [Drizzle ORM](https://orm.drizzle.team) and
+[postgres.js](https://github.com/porsager/postgres) for PostgreSQL. Schema lives in
+`packages/db/src/schema`, repositories in `packages/db/src/repositories`, and generated SQL
+migrations in `packages/db/drizzle`.
+
+Set `DATABASE_URL` in `.env` to enable persistence. It is optional: without it the app
+validates submissions but skips writes, so the starter kit runs with no database at all.
+
+```bash
+# Apply the committed migrations to the database in DATABASE_URL
+pnpm --filter @repo/db db:migrate
+
+# After editing a schema file, generate a new migration
+pnpm --filter @repo/db db:generate
+```
+
+Query through a repository rather than the raw client:
+
+```ts
+import { createContactRepository } from "@repo/db";
+
+const repo = createContactRepository(db);
+await repo.create({ name, email, message });
+```
+
+Tests run against [PGlite](https://pglite.dev), an in-process Postgres, so the real schema
+and SQL are exercised without a server. `createTestDb()` from `@repo/db/testing` applies the
+migrations and returns a ready-to-use database.
 
 ## Working with shadcn/ui
 

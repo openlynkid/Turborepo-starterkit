@@ -1,14 +1,28 @@
+import type { ContactRepository } from "@repo/db";
 import { contactFormSchema } from "@repo/validators";
 
 export type ContactResult =
-  | { ok: true; data: { name: string; email: string; message: string } }
+  | {
+      ok: true;
+      data: { name: string; email: string; message: string };
+      id?: string;
+    }
   | { ok: false; errors: Record<string, string[]> };
 
+export type SubmitContactOptions = {
+  /** When provided, the validated message is persisted. */
+  repository?: ContactRepository | null;
+};
+
 /**
- * Validates and "submits" a contact message. Shared by the route handler and
- * the server action so validation lives in one place.
+ * Validates a contact message and, when a repository is available, persists it.
+ * Shared by the route handler and the server action so validation and
+ * persistence live in one place.
  */
-export async function submitContact(input: unknown): Promise<ContactResult> {
+export async function submitContact(
+  input: unknown,
+  options: SubmitContactOptions = {},
+): Promise<ContactResult> {
   const parsed = contactFormSchema.safeParse(input);
 
   if (!parsed.success) {
@@ -20,6 +34,11 @@ export async function submitContact(input: unknown): Promise<ContactResult> {
     return { ok: false, errors };
   }
 
-  // Replace with real work: send an email, write to a database, enqueue a job.
-  return { ok: true, data: parsed.data };
+  const { repository } = options;
+  if (!repository) {
+    return { ok: true, data: parsed.data };
+  }
+
+  const saved = await repository.create(parsed.data);
+  return { ok: true, data: parsed.data, id: saved.id };
 }

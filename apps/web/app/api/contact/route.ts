@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { submitContact } from "@/lib/contact";
+import { getContactRepository } from "@/lib/db";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -13,7 +14,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = await submitContact(body);
+  const result = await submitContact(body, {
+    repository: getContactRepository(),
+  });
 
   if (!result.ok) {
     return NextResponse.json(result, { status: 422 });
