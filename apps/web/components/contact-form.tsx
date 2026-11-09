@@ -1,96 +1,111 @@
 "use client";
 
-import * as React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import type { z } from "zod";
 
 import { Button } from "@repo/ui/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@repo/ui/components/ui/form";
 import { Input } from "@repo/ui/components/ui/input";
-import { Label } from "@repo/ui/components/ui/label";
+import { Textarea } from "@repo/ui/components/ui/textarea";
+import { contactFormSchema } from "@repo/validators";
 
 import { submitContactAction } from "@/lib/actions";
 
-type Errors = Record<string, string[]>;
+type ContactFormValues = z.input<typeof contactFormSchema>;
+
+const defaultValues: ContactFormValues = { name: "", email: "", message: "" };
 
 export function ContactForm() {
-  const [pending, setPending] = React.useState(false);
-  const [errors, setErrors] = React.useState<Errors>({});
+  const form = useForm<ContactFormValues>({
+    resolver: zodResolver(contactFormSchema),
+    defaultValues,
+  });
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const data = Object.fromEntries(new FormData(form));
+  const onSubmit = form.handleSubmit(async (values) => {
+    const result = await submitContactAction(values);
 
-    setPending(true);
-    setErrors({});
-
-    try {
-      const result = await submitContactAction(data);
-
-      if (result.ok) {
-        toast.success("Message sent", {
-          description: "Thanks — we'll get back to you shortly.",
-        });
-        form.reset();
-        return;
-      }
-
-      setErrors(result.errors);
-      toast.error("Please fix the highlighted fields");
-    } catch {
-      toast.error("Something went wrong", {
-        description: "Please try again in a moment.",
+    if (result.ok) {
+      toast.success("Message sent", {
+        description: "Thanks — we'll get back to you shortly.",
       });
-    } finally {
-      setPending(false);
+      form.reset(defaultValues);
+      return;
     }
-  }
+
+    for (const [field, messages] of Object.entries(result.errors)) {
+      form.setError(field as keyof ContactFormValues, {
+        message: messages[0],
+      });
+    }
+    toast.error("Please fix the highlighted fields");
+  });
 
   return (
-    <form onSubmit={onSubmit} noValidate className="grid gap-4">
-      <div className="grid gap-2">
-        <Label htmlFor="name">Name</Label>
-        <Input id="name" name="name" autoComplete="name" required />
-        <FieldError messages={errors.name} />
-      </div>
+    <Form {...form}>
+      <form onSubmit={onSubmit} className="grid gap-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input autoComplete="name" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-      <div className="grid gap-2">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
+        <FormField
+          control={form.control}
           name="email"
-          type="email"
-          autoComplete="email"
-          required
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" autoComplete="email" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        <FieldError messages={errors.email} />
-      </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="message">Message</Label>
-        <textarea
-          id="message"
+        <FormField
+          control={form.control}
           name="message"
-          required
-          rows={4}
-          className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:opacity-50"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Message</FormLabel>
+              <FormControl>
+                <Textarea rows={4} {...field} />
+              </FormControl>
+              <FormDescription>
+                At least 10 characters. Stored in Postgres when configured.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        <FieldError messages={errors.message} />
-      </div>
 
-      <Button type="submit" disabled={pending} className="justify-self-start">
-        {pending ? "Sending…" : "Send message"}
-      </Button>
-    </form>
-  );
-}
-
-function FieldError({ messages }: { messages?: string[] }) {
-  if (!messages?.length) {
-    return null;
-  }
-  return (
-    <p role="alert" className="text-sm text-destructive">
-      {messages[0]}
-    </p>
+        <Button
+          type="submit"
+          disabled={form.formState.isSubmitting}
+          className="justify-self-start"
+        >
+          {form.formState.isSubmitting ? "Sending…" : "Send message"}
+        </Button>
+      </form>
+    </Form>
   );
 }

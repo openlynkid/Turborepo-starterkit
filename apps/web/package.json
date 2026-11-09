@@ -16,6 +16,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@hookform/resolvers": "catalog:",
     "@repo/db": "workspace:^",
     "@repo/env": "workspace:^",
     "@repo/ui": "workspace:*",
@@ -25,6 +26,7 @@
     "next-themes": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "react-hook-form": "catalog:",
     "sonner": "catalog:",
     "zod": "catalog:"
   },

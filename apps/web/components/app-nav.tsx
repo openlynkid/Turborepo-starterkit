@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   MessageSquare,
   Settings,
+  SwatchBook,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -16,6 +17,7 @@ import { appNav } from "@/lib/site";
 const icons: Record<string, LucideIcon> = {
   "/dashboard": LayoutDashboard,
   "/messages": MessageSquare,
+  "/components": SwatchBook,
   "/settings": Settings,
 };
 

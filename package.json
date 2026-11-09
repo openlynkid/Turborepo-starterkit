@@ -1,6 +1,11 @@
 {
   "name": "turborepo-starterkit",
   "private": true,
+  "license": "MIT",
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
@@ -11,9 +16,14 @@
     "prepare": "husky",
     "test": "turbo run test",
     "test:e2e": "turbo run test:e2e",
-    "test:coverage": "turbo run test:coverage"
+    "test:coverage": "turbo run test:coverage",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "changeset publish"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^1.0.1",
+    "@changesets/cli": "^3.0.3",
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.4",
     "@repo/eslint-config": "workspace:^",
@@ -23,9 +33,5 @@
     "prettier": "3.9.6",
     "turbo": "^2.11.10",
     "typescript": "catalog:"
-  },
-  "packageManager": "pnpm@11.25.0",
-  "engines": {
-    "node": ">=24"
   }
 }

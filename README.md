@@ -31,6 +31,18 @@ Each package and app is 100% [TypeScript](https://www.typescriptlang.org/).
 - **Vitest** + **Testing Library** – unit tests
 - **Drizzle ORM** + **postgres.js** – typed SQL and migrations for PostgreSQL
 - **Playwright** – end-to-end tests
+- **Changesets** – versioning and changelogs
+- **Renovate** – automated dependency updates
+
+## Documentation
+
+- [`docs/architecture.md`](./docs/architecture.md) – workspace graph, data flow
+  and conventions
+- [`docs/components.md`](./docs/components.md) – the component library and how
+  to add to it
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) – setup, commit conventions, releases
+- [`SECURITY.md`](./SECURITY.md) – how to report a vulnerability
+- [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md)
 
 ## Requirements
 
@@ -208,6 +220,7 @@ apps/web/app
 ├── (app)            # product shell: sidebar + top bar
 │   ├── dashboard/
 │   ├── messages/
+│   ├── components/  # live component library tour
 │   └── settings/
 ├── api/contact/     # route handler
 ├── error.tsx        # route error boundary
@@ -258,12 +271,48 @@ cd packages/ui
 pnpm dlx shadcn@latest add <component>
 ```
 
+If the registry writes a bare `from "cn"` import, point it at the workspace helper:
+
+```ts
+import { cn } from "@repo/ui/lib/utils";
+```
+
 Import components in an app using the workspace alias:
 
 ```tsx
 import { Button } from "@repo/ui/components/ui/button";
 import { cn } from "@repo/ui/lib/utils";
 ```
+
+The web app ships a live tour of the library at `/components`, and
+[`docs/components.md`](./docs/components.md) lists every component with its
+import path.
+
+## Releases
+
+The project uses [Changesets](https://github.com/changesets/changesets). Record
+a change with:
+
+```bash
+pnpm changeset        # describe the change, pick a bump
+```
+
+`.github/workflows/release.yml` opens a "Version Packages" pull request that
+consumes the pending changesets and updates the changelogs. Merging it publishes
+the packages (set `NPM_TOKEN` to publish to a registry).
+
+## Deployment
+
+`apps/web/vercel.json` configures the web app for [Vercel](https://vercel.com):
+
+- **Root directory:** `apps/web`
+- **Install command:** `cd ../.. && pnpm install --frozen-lockfile`
+- **Build command:** `cd ../.. && pnpm turbo run build --filter=web`
+
+Set the environment variables from `.env.example` in the project settings
+(`DATABASE_URL` is optional). The repository is also configured for
+[Renovate](./renovate.json), which opens grouped dependency-update pull requests
+on a weekly schedule.
 
 ## Tailwind CSS
 
@@ -296,3 +345,7 @@ pnpm dlx create-next-app@latest <app-name>
 
 Then add `@repo/ui`, `@repo/eslint-config`, and `@repo/typescript-config` as workspace
 dependencies and reuse the shared Tailwind setup as shown in `apps/web`.
+
+## License
+
+[MIT](./LICENSE)

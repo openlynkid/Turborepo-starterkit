@@ -25,5 +25,6 @@ export const marketingNav: NavItem[] = [
 export const appNav: NavItem[] = [
   { title: "Dashboard", href: "/dashboard" },
   { title: "Messages", href: "/messages" },
+  { title: "Components", href: "/components" },
   { title: "Settings", href: "/settings" },
 ];

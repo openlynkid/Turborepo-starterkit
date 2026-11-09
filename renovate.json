@@ -1,0 +1,58 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":dependencyDashboard"],
+  "timezone": "Asia/Jakarta",
+  "schedule": ["before 6am on monday"],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"]
+  },
+  "packageRules": [
+    {
+      "description": "Keep React and React DOM pinned together (see pnpm-workspace.yaml overrides).",
+      "matchPackageNames": [
+        "react",
+        "react-dom",
+        "@types/react",
+        "@types/react-dom"
+      ],
+      "groupName": "react"
+    },
+    {
+      "description": "Group Tailwind tooling.",
+      "matchPackageNames": ["tailwindcss", "@tailwindcss/postcss"],
+      "groupName": "tailwind"
+    },
+    {
+      "description": "Group Playwright and its browser binaries.",
+      "matchPackageNames": [
+        "@playwright/test",
+        "playwright",
+        "playwright-core"
+      ],
+      "groupName": "playwright"
+    },
+    {
+      "description": "Group the shared lint/format toolchain.",
+      "matchPackageNames": [
+        "eslint",
+        "prettier",
+        "husky",
+        "lint-staged",
+        "@commitlint/cli",
+        "@commitlint/config-conventional"
+      ],
+      "groupName": "lint-format"
+    },
+    {
+      "description": "Group the Drizzle data layer.",
+      "matchPackageNames": [
+        "drizzle-orm",
+        "drizzle-kit",
+        "postgres",
+        "@electric-sql/pglite"
+      ],
+      "groupName": "drizzle"
+    }
+  ]
+}

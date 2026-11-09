@@ -64,3 +64,30 @@ test.describe("seo routes", () => {
     expect(response.headers()["content-type"]).toContain("image/png");
   });
 });
+
+test.describe("component library", () => {
+  test("components page renders the showcase", async ({ page }) => {
+    await page.goto("/components");
+    await expect(
+      page.getByRole("heading", { name: "Components", level: 1 }),
+    ).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Billing" })).toBeVisible();
+  });
+
+  test("switching tabs reveals the billing table", async ({ page }) => {
+    await page.goto("/components");
+    await page.getByRole("tab", { name: "Billing" }).click();
+    await expect(page.getByRole("cell", { name: "INV-001" })).toBeVisible();
+  });
+
+  test("switching to settings reveals form controls", async ({ page }) => {
+    await page.goto("/components");
+    await page.getByRole("tab", { name: "Settings" }).click();
+    await expect(
+      page.getByRole("switch", { name: "Email notifications" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("checkbox", { name: "Accept terms" }),
+    ).toBeVisible();
+  });
+});
