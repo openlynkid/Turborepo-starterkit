@@ -77,13 +77,27 @@ test.describe("security", () => {
     expect(response.headers()["x-powered-by"]).toBeUndefined();
   });
 
-  test("sends a content security policy", async ({ request }) => {
+  test("sends a nonce-based content security policy", async ({ request }) => {
     const response = await request.get("/");
     const csp = response.headers()["content-security-policy"];
 
     expect(csp).toContain("default-src 'self'");
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("object-src 'none'");
+    // Scripts run from a per-request nonce, not 'unsafe-inline'.
+    expect(csp).toMatch(/script-src 'self' 'nonce-[^']+' 'strict-dynamic'/);
+    expect(csp).not.toContain("script-src 'self' 'unsafe-inline'");
+  });
+
+  test("tags inline scripts with the request nonce", async ({ request }) => {
+    const response = await request.get("/");
+    const csp = response.headers()["content-security-policy"] ?? "";
+    const nonce = csp.match(/'nonce-([^']+)'/)?.[1];
+    expect(nonce).toBeTruthy();
+
+    const html = await response.text();
+    // next-themes injects an inline bootstrap script that must carry the nonce.
+    expect(html).toContain(`<script nonce="${nonce}"`);
   });
 });
 

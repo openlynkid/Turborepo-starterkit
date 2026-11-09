@@ -42,14 +42,16 @@ addresses. Re-check them with `pnpm audit` whenever dependencies are bumped.
 
 ## Baseline hardening
 
-- The web app sends a `Content-Security-Policy` (default-src 'self', no
-  object-src, frame-ancestors 'none') plus `X-Content-Type-Options`,
+- The web app sends a `Content-Security-Policy` with a per-request nonce
+  (`script-src 'self' 'nonce-…' 'strict-dynamic'`), plus `X-Content-Type-Options`,
   `X-Frame-Options`, `Referrer-Policy`, `Strict-Transport-Security` and
-  `Permissions-Policy` headers, and disables the `X-Powered-By` header (see
-  `apps/web/next.config.js`). The headers are covered by an end-to-end test.
-  The CSP currently allows `'unsafe-inline'` for scripts because the pages are
-  statically prerendered; to tighten it, move the header to `proxy.ts` and use
-  nonces (this forces dynamic rendering).
+  `Permissions-Policy` headers, and disables the `X-Powered-By` header. The
+  static headers live in `apps/web/next.config.js`; the nonce-based CSP is
+  generated in `apps/web/proxy.ts` and covered by an end-to-end test.
+  Because a nonce must be injected per request, the pages render dynamically
+  (no static/CDN caching of HTML) — a deliberate trade for a strict `script-src`
+  that no longer allows `'unsafe-inline'`. `style-src` keeps `'unsafe-inline'`
+  for inline style attributes (Radix, sonner), which are far lower risk.
 - Authentication is available for the app section. Set `SESSION_SECRET`,
   `ADMIN_EMAIL` and `ADMIN_PASSWORD` to require a login for `/dashboard`,
   `/messages` and `/settings`. The session is a signed, `HttpOnly`, `SameSite=Lax`

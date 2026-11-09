@@ -97,6 +97,8 @@ enforce it:
 
 1. `apps/web/proxy.ts` — Next.js 16's Proxy (the renamed middleware). It reads
    the signed session cookie and redirects unauthenticated requests to `/login`.
+   It also generates the per-request CSP nonce and sets the
+   `Content-Security-Policy` header (see "Security headers" below).
 2. `apps/web/app/(app)/layout.tsx` — the authoritative server-side check. Even
    if a request reached the layout without passing the Proxy matcher, it cannot
    render protected data without a valid session.
@@ -111,6 +113,16 @@ validation: a per-IP fixed-window rate limit (`lib/rate-limit.ts`) and, when
 configured, a Cloudflare Turnstile check (`lib/turnstile.ts`). Both the route
 handler and the server action call the same guard, so the API and the UI stay in
 sync.
+
+## Security headers
+
+Static hardening headers live in `apps/web/next.config.js`. The
+`Content-Security-Policy` is generated per request in `apps/web/proxy.ts` with a
+nonce (`script-src 'self' 'nonce-…' 'strict-dynamic'`, no `'unsafe-inline'`), so
+only scripts Next.js tags with the nonce may execute. The nonce forces dynamic
+rendering — HTML is not statically cached — which is the deliberate cost of a
+strict script policy. `style-src` keeps `'unsafe-inline'` for inline style
+attributes (Radix, sonner).
 
 ## Operations
 

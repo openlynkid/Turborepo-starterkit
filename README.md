@@ -276,6 +276,17 @@ signed, `HttpOnly` cookies verified with an HMAC (`apps/web/lib/session.ts`).
 Leave the variables unset and the app stays open — convenient for local
 development and CI.
 
+## Security headers & CSP
+
+Static hardening headers (`X-Content-Type-Options`, `X-Frame-Options`,
+`Referrer-Policy`, `Strict-Transport-Security`, `Permissions-Policy`, no
+`X-Powered-By`) are set in `apps/web/next.config.js`. The
+`Content-Security-Policy` is generated per request in `apps/web/proxy.ts` so it
+can carry a nonce: `script-src 'self' 'nonce-…' 'strict-dynamic'` with no
+`'unsafe-inline'`, so only scripts Next.js tags with the nonce may run. A nonce
+requires dynamic rendering, so HTML is not statically cached — a deliberate
+trade for a strict script policy.
+
 ## Abuse protection
 
 `POST /api/contact` and the contact server action share a fixed-window rate limit
