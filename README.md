@@ -18,10 +18,13 @@ Each package and app is 100% [TypeScript](https://www.typescriptlang.org/).
 ### Tooling
 
 - **Turborepo** – task orchestration and caching
-- **pnpm** – fast, disk-efficient package manager
+- **pnpm** – fast, disk-efficient package manager (with a version catalog)
 - **Tailwind CSS v4** – utility-first CSS with the new CSS-first config
 - **shadcn/ui** – accessible components built on Radix UI primitives
 - **ESLint** + **Prettier** – linting and formatting
+- **Husky** + **lint-staged** + **Commitlint** – Git hooks and Conventional Commits
+- **Vitest** + **Testing Library** – unit tests
+- **Playwright** – end-to-end tests
 
 ## Requirements
 
@@ -43,9 +46,59 @@ pnpm build
 # Lint and type-check everything
 pnpm lint
 pnpm check-types
+
+# Run unit tests
+pnpm test
+
+# Run end-to-end tests (builds the web app first)
+pnpm test:e2e
 ```
 
 The web app runs at [http://localhost:3000](http://localhost:3000).
+
+## Testing
+
+Unit tests use [Vitest](https://vitest.dev) with Testing Library and live next to the
+code as `*.test.ts(x)` files (for example `packages/ui/src/components/ui/button.test.tsx`).
+
+```bash
+pnpm test            # run all unit tests once
+pnpm test:coverage   # run with coverage (packages/ui)
+```
+
+End-to-end tests use [Playwright](https://playwright.dev) and live in `apps/web/e2e`.
+The first run needs a browser:
+
+```bash
+pnpm --filter web exec playwright install chromium
+pnpm test:e2e
+```
+
+## Version catalog
+
+Shared dependency versions are declared once in the `catalog` section of
+`pnpm-workspace.yaml`. Packages reference them with `catalog:` so versions stay in sync:
+
+```json
+{
+  "dependencies": {
+    "react": "catalog:"
+  }
+}
+```
+
+## Git hooks
+
+[Husky](https://typicode.github.io/husky) installs hooks on `pnpm install`:
+
+- **pre-commit** – runs `lint-staged` (ESLint `--fix` + Prettier on staged files)
+- **commit-msg** – validates messages with [Commitlint](https://commitlint.js.org)
+  (Conventional Commits, e.g. `feat: add button component`)
+
+## Environment variables
+
+Copy `.env.example` to `.env` and fill in the values. `.env*` files are ignored by Git
+and picked up by Turborepo as task inputs.
 
 ## Working with shadcn/ui
 
