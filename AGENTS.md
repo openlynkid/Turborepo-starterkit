@@ -60,3 +60,15 @@ Turborepo starter kit: pnpm workspaces + Next.js (App Router) + Tailwind CSS v4 
   `z.string().trim().toLowerCase().pipe(z.email())`.
 - `apps/web` now has Vitest (node env) for `lib/**` and `app/**` tests.
 - Packages with a `check-types` using `process.env` need `@types/node` devDependency.
+
+## Phase 6 — CI (GitHub Actions)
+
+- Workflow: `.github/workflows/ci.yml`, two jobs: `ci` (format:check, lint, check-types,
+  test, build) and `e2e` (Playwright chromium + upload report artifact).
+- `pnpm/action-setup@v6` reads `packageManager` from package.json (do NOT also pass `version`).
+- Node via `actions/setup-node@v7` `node-version-file: .nvmrc`; pnpm store cached via `cache: pnpm`.
+- `.turbo` cached with `actions/cache@v6` (sha key + restore-keys) to reuse task results.
+- Telemetry disabled via `TURBO_TELEMETRY_DISABLED` / `NEXT_TELEMETRY_DISABLED`.
+- Validate workflow edits with actionlint (binary, no docker needed):
+  `curl -sSL https://github.com/rhysd/actionlint/releases/latest/download/actionlint_<ver>_linux_amd64.tar.gz`.
+- `pnpm format:check` is part of CI; run `pnpm format` before committing docs/code.

@@ -1,5 +1,7 @@
 # Turborepo Starter Kit
 
+[![CI](https://github.com/openlynkid/Turborepo-starterkit/actions/workflows/ci.yml/badge.svg)](https://github.com/openlynkid/Turborepo-starterkit/actions/workflows/ci.yml)
+
 A modern, production-ready monorepo starter kit built with **Turborepo**, **pnpm workspaces**, **Next.js**, **Tailwind CSS v4**, and **shadcn/ui**.
 
 ## What's inside
@@ -97,6 +99,25 @@ Shared dependency versions are declared once in the `catalog` section of
 - **pre-commit** – runs `lint-staged` (ESLint `--fix` + Prettier on staged files)
 - **commit-msg** – validates messages with [Commitlint](https://commitlint.js.org)
   (Conventional Commits, e.g. `feat: add button component`)
+
+## Continuous integration
+
+Every push to `main` and every pull request runs the workflow in
+[`.github/workflows/ci.yml`](./.github/workflows/ci.yml) on GitHub Actions. It has two jobs:
+
+- **Lint, types & tests** – `pnpm format:check`, `pnpm lint`, `pnpm check-types`,
+  `pnpm test`, then `pnpm build`.
+- **End-to-end tests** – installs Playwright's Chromium and runs `pnpm test:e2e`
+  (the Playwright report is uploaded as a build artifact).
+
+Dependencies are installed with `pnpm install --frozen-lockfile`, Node comes from `.nvmrc`,
+and `.turbo` is cached between runs so repeated jobs reuse task results.
+
+Run the same checks locally before pushing:
+
+```bash
+pnpm format:check && pnpm lint && pnpm check-types && pnpm test && pnpm build
+```
 
 ## Environment variables
 
