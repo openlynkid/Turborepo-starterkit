@@ -189,19 +189,88 @@ Findings and the resulting changes. Re-run `pnpm audit` after any dependency bum
   (GHSA-g3hv-75wg-m249). Neither upstream has released a fix, so
   `pnpm-workspace.yaml` pins them through `overrides` (`esbuild: ^0.25.0`,
   `minimatch: ^11.0.1`). `pnpm audit` is now clean.
-- **Security headers.** `apps/web/next.config.js` sets
-  `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`,
-  `Strict-Transport-Security`, `Permissions-Policy` and disables
-  `X-Powered-By`. Covered by the `security` e2e block in
-  `apps/web/e2e/app-structure.spec.ts`. There is no CSP yet — add one before
-  shipping if the app renders third-party content.
+- **Security headers.** `apps/web/next.config.js` sets a baseline
+  `Content-Security-Policy` plus `X-Content-Type-Options`, `X-Frame-Options`,
+  `Referrer-Policy`, `Strict-Transport-Security`, `Permissions-Policy` and
+  disables `X-Powered-By`. Covered by the `security` e2e block in
+  `apps/web/e2e/app-structure.spec.ts`. The CSP keeps `'unsafe-inline'` for
+  scripts (static pages can't use nonces); see Phase 8 for the nonce upgrade
+  path.
 - **CI permissions.** `.github/workflows/ci.yml` now declares
   `permissions: contents: read`. `release.yml` keeps `contents/pull-requests:
 write` because changesets opens a PR.
-- **Known gaps (accepted for a starter kit).** `POST /api/contact` and the
-  contact server action have no auth, rate limiting or CAPTCHA; a public
-  deployment should add them. Documented in `SECURITY.md`.
 - Clean by inspection: no committed secrets, `.env*` ignored (only
   `.env.example` tracked), Drizzle queries are parameterized, no
   `dangerouslySetInnerHTML`/`eval`, env validated with t3-env + Zod and
   server/client values kept separate.
+
+## Phase 8 — Production hardening
+
+Closed the gaps flagged as "accepted for a starter kit" in the Phase 7 audit.
+All features stay **opt-in**, so local dev and CI need no new setup.
+
+- **Auth (opt-in).** `SESSION_SECRET` + `ADMIN_EMAIL` + `ADMIN_PASSWORD` turn on
+  a single-admin login for the app section. `apps/web/lib/session.ts` signs an
+  HMAC-SHA256 session in an `HttpOnly`, `SameSite=Lax` cookie; credentials are
+  compared in constant time. Two layers: `apps/web/proxy.ts` (Next.js 16's
+  Proxy — `middleware.ts` is deprecated/renamed, and `runtime` is not a valid
+  Proxy config option) does an optimistic redirect, and the `(app)` layout does
+  the authoritative server-side check. `/login` shows a "Continue without auth"
+  shortcut when auth is off. Verified live: login → `/dashboard`, sign out →
+  `/login`, wrong password → error.
+- **Rate limiting.** `apps/web/lib/rate-limit.ts` is a fixed-window limiter
+  (in-process Map; `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_MS`). `lib/contact-guard.ts`
+  applies it per client IP (`x-forwarded-for`) for both the route handler and the
+  server action. Behind multiple instances add a shared limit at the edge too.
+- **CAPTCHA (opt-in).** `lib/turnstile.ts` verifies Cloudflare Turnstile tokens
+  (fails closed) when `TURNSTILE_SECRET_KEY` is set; `components/turnstile.tsx`
+  renders the widget when `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is set.
+- **Health + errors.** `GET /api/health` reports app + DB status via
+  `@repo/db` `pingDatabase` (added in `packages/db/src/client.ts`).
+  `apps/web/instrumentation.ts` `onRequestError` logs structured server errors.
+- **Deploy migrations.** `packages/db/scripts/migrate.mjs` (`db:migrate:deploy`)
+  runs `drizzle-kit migrate` and **skips cleanly when `DATABASE_URL` is unset**
+  (the drizzle config otherwise falls back to localhost and would fail the
+  build). It also skips when `VERCEL_ENV` is set but is not `production`, so
+  preview deploys never migrate. `apps/web/vercel.json` calls it after the build.
+- **Env split.** Client values moved to `apps/web/client-env.ts` so client
+  components don't bundle the server schema; `apps/web/env.ts` is server-only.
+- **Turbo.** `turbo.json` `globalEnv` now lists `NODE_ENV`, `DATABASE_URL` and
+  `VERCEL_ENV`. `packages/db/eslint.config.mjs` adds Node globals for
+  `scripts/**/*.mjs`.
+- **Tests.** New unit tests for session, rate-limit, turnstile, contact-guard,
+  proxy, health route and `pingDatabase`; e2e adds CSP, health and auth blocks.
+  `playwright.config.ts` raises `RATE_LIMIT_MAX` for the shared e2e server so
+  functional tests don't trip the limiter (the limiter has its own unit tests).
+  Full suite: 41 unit tests + 23 e2e, all green.
+
+## Audit follow-ups (2026-11, second pass)
+
+- **Login rate limiting.** The contact endpoint was limited but login was not.
+  `lib/rate-limit.ts` now exports `loginRateLimiter`
+  (`LOGIN_RATE_LIMIT_MAX` / `LOGIN_RATE_LIMIT_WINDOW_MS`, default 10 / 15 min),
+  applied in `lib/auth-actions.ts` before credential verification.
+- **Auth e2e.** `apps/web/e2e/auth.spec.ts` runs against a **second** server on
+  `:3001` started with auth env (`chromium-auth` project in `playwright.config.ts`);
+  the default project ignores that spec. Covers redirect, bad credentials, and
+  sign-in/sign-out. `CardTitle` is a `div`, not a heading — assert on labels, and
+  scope `role="alert"` to `p[role='alert']` (Next's route announcer also has
+  `role="alert"`).
+- **Strict CSP (nonce).** `apps/web/proxy.ts` now generates a per-request nonce
+  and sets `Content-Security-Policy` with
+  `script-src 'self' 'nonce-…' 'strict-dynamic'` (no `'unsafe-inline'`); the
+  static headers stay in `next.config.js`. The root layout reads `x-nonce` and
+  passes it to `ThemeProvider` (`next-themes` supports a `nonce` prop). A nonce
+  forces **dynamic rendering** — the build route table flips `/`, `/about`,
+  `/components`, `/settings` from `○` to `ƒ`. That is the deliberate cost.
+  `style-src` keeps `'unsafe-inline'` for inline style attributes. Dev keeps
+  `'unsafe-eval'` (React needs it). e2e asserts the nonce is present, that
+  `'unsafe-inline'` is gone from `script-src`, and that a browser run logs no CSP
+  violations.
+- **Gitignore.** Root `.gitignore` had duplicated `coverage`/Playwright blocks;
+  deduped. `apps/web/.gitignore` already ignores `/playwright-report/`.
+- Full suite after this pass: **79 unit tests + 28 e2e**, all green; `pnpm audit`
+  clean.
+- **Dev origins.** Next 16 blocks cross-origin dev assets; set
+  `ALLOWED_DEV_ORIGINS` (comma-separated hostnames, declared in `turbo.json`
+  `globalEnv`) when exposing `next dev` via a tunnel.

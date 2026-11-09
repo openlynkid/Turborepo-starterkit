@@ -42,12 +42,38 @@ addresses. Re-check them with `pnpm audit` whenever dependencies are bumped.
 
 ## Baseline hardening
 
-- The web app sends `X-Content-Type-Options`, `X-Frame-Options`,
-  `Referrer-Policy`, `Strict-Transport-Security` and `Permissions-Policy`
-  headers, and disables the `X-Powered-By` header (see
-  `apps/web/next.config.js`). These are covered by an end-to-end test.
+- The web app sends a `Content-Security-Policy` with a per-request nonce
+  (`script-src 'self' 'nonce-…' 'strict-dynamic'`), plus `X-Content-Type-Options`,
+  `X-Frame-Options`, `Referrer-Policy`, `Strict-Transport-Security` and
+  `Permissions-Policy` headers, and disables the `X-Powered-By` header. The
+  static headers live in `apps/web/next.config.js`; the nonce-based CSP is
+  generated in `apps/web/proxy.ts` and covered by an end-to-end test.
+  Because a nonce must be injected per request, the pages render dynamically
+  (no static/CDN caching of HTML) — a deliberate trade for a strict `script-src`
+  that no longer allows `'unsafe-inline'`. `style-src` keeps `'unsafe-inline'`
+  for inline style attributes (Radix, sonner), which are far lower risk.
+- Authentication is available for the app section. Set `SESSION_SECRET`,
+  `ADMIN_EMAIL` and `ADMIN_PASSWORD` to require a login for `/dashboard`,
+  `/messages` and `/settings`. The session is a signed, `HttpOnly`, `SameSite=Lax`
+  cookie verified by `proxy.ts` and again in the `(app)` layout. When these
+  variables are unset the app stays open (local development and CI).
+- Login attempts are rate-limited per client IP (fixed window, `LOGIN_RATE_LIMIT_MAX`
+  / `LOGIN_RATE_LIMIT_WINDOW_MS`) to blunt online password guessing against the
+  admin account. The limiter is in-process, so add a shared limit at the edge
+  behind multiple instances.
+- The public contact endpoint is rate-limited per client IP (fixed window,
+  `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_MS`). The limiter is in-process, so
+  behind multiple instances add a shared limit at the edge (for example Vercel
+  Firewall) as well.
+- Cloudflare Turnstile can be enabled by setting `TURNSTILE_SECRET_KEY` and
+  `NEXT_PUBLIC_TURNSTILE_SITE_KEY`; the contact form then requires a CAPTCHA
+  token that is verified server-side.
 - All external input (the contact form and `POST /api/contact`) is validated
   with the shared Zod schema on the server before it reaches the database.
-- The contact API does not authenticate or rate-limit callers. If you expose it
-  publicly, add rate limiting at the edge (for example Vercel Firewall) or in a
-  middleware before deploying.
+
+## Observability
+
+- `apps/web/instrumentation.ts` exports `onRequestError`, which logs structured
+  server errors. Point it at a provider (Sentry, Axiom, a webhook, ...) before
+  shipping.
+- `GET /api/health` reports app and database health for probes.

@@ -1,15 +1,33 @@
+import { cookies } from "next/headers";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { ModeToggle } from "@repo/ui/components/mode-toggle";
 import { Separator } from "@repo/ui/components/ui/separator";
 
 import { AppMobileNav } from "@/components/app-mobile-nav";
 import { AppNav } from "@/components/app-nav";
+import { LogoutButton } from "@/components/logout-button";
+import {
+  isAuthEnabled,
+  SESSION_COOKIE,
+  verifySessionToken,
+} from "@/lib/session";
 import { site } from "@/lib/site";
 
-export default function AppLayout({
+export default async function AppLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // Authoritative auth check. Runs on the server for every app route, so a
+  // request that slips past `proxy.ts` still cannot read protected data.
+  const authEnabled = isAuthEnabled();
+  if (authEnabled) {
+    const store = await cookies();
+    if (!verifySessionToken(store.get(SESSION_COOKIE)?.value)) {
+      redirect("/login");
+    }
+  }
+
   return (
     <div className="min-h-svh bg-background">
       <div className="mx-auto flex min-h-svh w-full max-w-7xl">
@@ -40,6 +58,7 @@ export default function AppLayout({
                 Back to site
               </Link>
               <ModeToggle />
+              {authEnabled ? <LogoutButton /> : null}
             </div>
           </header>
 

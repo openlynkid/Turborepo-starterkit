@@ -147,14 +147,23 @@ Variables are validated at runtime with [`@repo/env`](./packages/env) (t3-env + 
 missing or malformed value fails fast with a clear error:
 
 ```ts
-// apps/web/env.ts
-import { createClientEnv, createServerEnv } from "@repo/env";
+// apps/web/env.ts — server-only values
+import { createServerEnv } from "@repo/env";
 
 export const env = createServerEnv();
+
+// apps/web/client-env.ts — NEXT_PUBLIC_* values, safe for the browser bundle
+import { createClientEnv } from "@repo/env";
+
 export const clientEnv = createClientEnv({
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
 });
 ```
+
+The client values live in their own module (`apps/web/client-env.ts`) so client
+components only bundle the `NEXT_PUBLIC_*` schema — importing `@/env` would pull
+the server schema into the browser.
 
 Add new variables to the schemas in `packages/env/src/core.ts`. Server variables stay on
 the server; only `NEXT_PUBLIC_*` values reach the browser.
@@ -217,12 +226,14 @@ apps/web/app
 │   ├── page.tsx     # landing page (with the contact form)
 │   ├── about/
 │   └── loading.tsx
-├── (app)            # product shell: sidebar + top bar
+├── (app)            # product shell: sidebar + top bar (auth-protected)
 │   ├── dashboard/
 │   ├── messages/
 │   ├── components/  # live component library tour
 │   └── settings/
+├── login/           # admin sign-in
 ├── api/contact/     # route handler
+├── api/health/      # liveness/readiness probe
 ├── error.tsx        # route error boundary
 ├── global-error.tsx # root error boundary
 ├── not-found.tsx    # 404 page
@@ -245,6 +256,54 @@ import { toast } from "sonner";
 
 toast.success("Message sent");
 ```
+
+## Authentication
+
+The app section (`/dashboard`, `/messages`, `/settings`) can be protected with a
+single-admin login. Authentication is **opt-in**: it turns on only when
+`SESSION_SECRET`, `ADMIN_EMAIL` and `ADMIN_PASSWORD` are all set.
+
+```bash
+SESSION_SECRET=$(openssl rand -base64 48)
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=change-me
+```
+
+When configured, unauthenticated visitors are redirected to `/login` by
+`apps/web/proxy.ts` (Next.js 16's Proxy, the renamed middleware) and again by the
+`(app)` layout, which performs the authoritative server-side check. Sessions are
+signed, `HttpOnly` cookies verified with an HMAC (`apps/web/lib/session.ts`).
+Leave the variables unset and the app stays open — convenient for local
+development and CI.
+
+## Security headers & CSP
+
+Static hardening headers (`X-Content-Type-Options`, `X-Frame-Options`,
+`Referrer-Policy`, `Strict-Transport-Security`, `Permissions-Policy`, no
+`X-Powered-By`) are set in `apps/web/next.config.js`. The
+`Content-Security-Policy` is generated per request in `apps/web/proxy.ts` so it
+can carry a nonce: `script-src 'self' 'nonce-…' 'strict-dynamic'` with no
+`'unsafe-inline'`, so only scripts Next.js tags with the nonce may run. A nonce
+requires dynamic rendering, so HTML is not statically cached — a deliberate
+trade for a strict script policy.
+
+## Abuse protection
+
+`POST /api/contact` and the contact server action share a fixed-window rate limit
+per client IP (`RATE_LIMIT_MAX`, `RATE_LIMIT_WINDOW_MS`). Login attempts have
+their own, stricter limit (`LOGIN_RATE_LIMIT_MAX`, `LOGIN_RATE_LIMIT_WINDOW_MS`).
+To require a CAPTCHA, set `TURNSTILE_SECRET_KEY` and
+`NEXT_PUBLIC_TURNSTILE_SITE_KEY`; the form then renders a Cloudflare Turnstile
+widget and the server verifies the token. The in-process limiter protects a
+single instance — behind multiple instances add a shared limit at the edge as
+well.
+
+## Health & observability
+
+`GET /api/health` returns `200` with the database status (`ok`,
+`not-configured`, or `degraded`) for liveness/readiness probes.
+`apps/web/instrumentation.ts` logs structured server errors via Next.js's
+`onRequestError` hook; wire it to your monitoring provider before shipping.
 
 ## SEO
 
@@ -307,12 +366,16 @@ the packages (set `NPM_TOKEN` to publish to a registry).
 
 - **Root directory:** `apps/web`
 - **Install command:** `cd ../.. && pnpm install --frozen-lockfile`
-- **Build command:** `cd ../.. && pnpm turbo run build --filter=web`
+- **Build command:** `cd ../.. && pnpm turbo run build --filter=web && pnpm --filter @repo/db db:migrate:deploy`
 
-Set the environment variables from `.env.example` in the project settings
-(`DATABASE_URL` is optional). The repository is also configured for
-[Renovate](./renovate.json), which opens grouped dependency-update pull requests
-on a weekly schedule.
+The build command applies the committed Drizzle migrations before the app is
+released, so a fresh deployment creates the schema. `db:migrate:deploy` skips
+cleanly when `DATABASE_URL` is unset and only runs on Vercel **production**
+deployments (`VERCEL_ENV`), so preview builds never touch the production schema.
+
+Set the environment variables from `.env.example` in the project settings.
+The repository is also configured for [Renovate](./renovate.json), which opens
+grouped dependency-update pull requests on a weekly schedule.
 
 ## Tailwind CSS
 

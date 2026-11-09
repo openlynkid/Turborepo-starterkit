@@ -90,6 +90,50 @@ route handler and the server action, so validation rules live in one place.
 
 The same logic backs `POST /api/contact`, so the API and the UI cannot drift.
 
+## Auth and abuse protection
+
+The app section can be protected with an opt-in single-admin login. Two layers
+enforce it:
+
+1. `apps/web/proxy.ts` — Next.js 16's Proxy (the renamed middleware). It reads
+   the signed session cookie and redirects unauthenticated requests to `/login`.
+   It also generates the per-request CSP nonce and sets the
+   `Content-Security-Policy` header (see "Security headers" below).
+2. `apps/web/app/(app)/layout.tsx` — the authoritative server-side check. Even
+   if a request reached the layout without passing the Proxy matcher, it cannot
+   render protected data without a valid session.
+
+`apps/web/lib/session.ts` owns the session format: an HMAC-SHA256 signature over
+a base64url payload, stored in an `HttpOnly`, `SameSite=Lax` cookie.
+`isAuthEnabled()` gates every check, so auth stays off until `SESSION_SECRET`,
+`ADMIN_EMAIL` and `ADMIN_PASSWORD` are all set.
+
+Contact submissions pass through `apps/web/lib/contact-guard.ts` before
+validation: a per-IP fixed-window rate limit (`lib/rate-limit.ts`) and, when
+configured, a Cloudflare Turnstile check (`lib/turnstile.ts`). Both the route
+handler and the server action call the same guard, so the API and the UI stay in
+sync.
+
+## Security headers
+
+Static hardening headers live in `apps/web/next.config.js`. The
+`Content-Security-Policy` is generated per request in `apps/web/proxy.ts` with a
+nonce (`script-src 'self' 'nonce-…' 'strict-dynamic'`, no `'unsafe-inline'`), so
+only scripts Next.js tags with the nonce may execute. The nonce forces dynamic
+rendering — HTML is not statically cached — which is the deliberate cost of a
+strict script policy. `style-src` keeps `'unsafe-inline'` for inline style
+attributes (Radix, sonner).
+
+## Operations
+
+- `GET /api/health` reports app and database status for liveness/readiness
+  probes (`apps/web/app/api/health/route.ts`).
+- `apps/web/instrumentation.ts` exports `onRequestError` to capture server
+  errors with the monitoring provider of your choice.
+- Deploys apply migrations with `pnpm --filter @repo/db db:migrate:deploy`
+  (`packages/db/scripts/migrate.mjs`), which skips cleanly when `DATABASE_URL`
+  is unset.
+
 ## Conventions
 
 - **Version catalog.** Shared versions live in the `catalog` section of

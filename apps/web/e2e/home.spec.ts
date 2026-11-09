@@ -46,4 +46,22 @@ test.describe("home page", () => {
 
     await expect(page.getByText("Message sent")).toBeVisible();
   });
+
+  test("loads without content security policy violations", async ({ page }) => {
+    const violations: string[] = [];
+    page.on("console", (message) => {
+      const text = message.text();
+      if (/content security policy|refused to/i.test(text)) {
+        violations.push(text);
+      }
+    });
+
+    await page.goto("/");
+    await page.getByRole("button", { name: "Toggle theme" }).click();
+    await expect
+      .poll(() => page.locator("html").getAttribute("class"))
+      .toContain("dark");
+
+    expect(violations).toEqual([]);
+  });
 });

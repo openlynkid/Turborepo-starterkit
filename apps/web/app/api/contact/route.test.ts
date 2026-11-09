@@ -55,4 +55,24 @@ describe("POST /api/contact", () => {
       errors: { form: ["Invalid JSON body"] },
     });
   });
+
+  it("returns 429 once the rate limit is exceeded", async () => {
+    let lastStatus = 0;
+
+    // The default limit is 5; earlier tests in this file already spent a few
+    // slots, so a bounded burst is guaranteed to trip the limiter.
+    for (let i = 0; i < 10; i += 1) {
+      const response = await POST(jsonRequest(valid));
+      lastStatus = response.status;
+      if (lastStatus === 429) {
+        await expect(response.json()).resolves.toMatchObject({
+          ok: false,
+          errors: { form: [expect.stringMatching(/too many requests/i)] },
+        });
+        break;
+      }
+    }
+
+    expect(lastStatus).toBe(429);
+  });
 });

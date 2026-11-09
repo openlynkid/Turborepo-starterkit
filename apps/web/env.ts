@@ -1,4 +1,4 @@
-import { createClientEnv, createServerEnv } from "@repo/env";
+import { createServerEnv } from "@repo/env";
 
 /**
  * Validated server environment. Import this anywhere on the server.
@@ -10,13 +10,12 @@ import { createClientEnv, createServerEnv } from "@repo/env";
 export const env = createServerEnv();
 
 /**
- * Validated client environment. The `NEXT_PUBLIC_*` values must be referenced
- * statically so the bundler can inline them.
+ * Validated client environment, re-exported for convenience. Client components
+ * should import it from `@/client-env` directly so the server schema never
+ * reaches the browser bundle.
  *
  * @example
- * import { clientEnv } from "@/env";
+ * import { clientEnv } from "@/client-env";
  * const url = clientEnv.NEXT_PUBLIC_APP_URL;
  */
-export const clientEnv = createClientEnv({
-  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-});
+export { clientEnv } from "./client-env";

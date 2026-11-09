@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -19,20 +20,31 @@ import { Input } from "@repo/ui/components/ui/input";
 import { Textarea } from "@repo/ui/components/ui/textarea";
 import { contactFormSchema } from "@repo/validators";
 
+import { clientEnv } from "@/client-env";
+import { TurnstileWidget } from "@/components/turnstile";
 import { submitContactAction } from "@/lib/actions";
 
 type ContactFormValues = z.input<typeof contactFormSchema>;
 
 const defaultValues: ContactFormValues = { name: "", email: "", message: "" };
 
+const turnstileSiteKey = clientEnv.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
 export function ContactForm() {
   const form = useForm<ContactFormValues>({
     resolver: zodResolver(contactFormSchema),
     defaultValues,
   });
+  const [turnstileToken, setTurnstileToken] = React.useState<string>();
+
+  const handleToken = React.useCallback((token: string) => {
+    setTurnstileToken(token);
+  }, []);
 
   const onSubmit = form.handleSubmit(async (values) => {
-    const result = await submitContactAction(values);
+    const result = await submitContactAction(
+      turnstileSiteKey ? { ...values, turnstileToken } : values,
+    );
 
     if (result.ok) {
       toast.success("Message sent", {
@@ -97,6 +109,10 @@ export function ContactForm() {
             </FormItem>
           )}
         />
+
+        {turnstileSiteKey ? (
+          <TurnstileWidget siteKey={turnstileSiteKey} onToken={handleToken} />
+        ) : null}
 
         <Button
           type="submit"

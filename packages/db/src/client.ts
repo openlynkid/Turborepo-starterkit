@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -29,6 +30,16 @@ export function createDbClient(connectionString: string): DbClient {
     db: drizzle(client, { schema }),
     close: () => client.end({ timeout: 5 }),
   };
+}
+
+/** Runs a trivial query to check that the database is reachable. */
+export async function pingDatabase(db: Database): Promise<boolean> {
+  try {
+    await db.execute(sql`select 1`);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export { schema };
