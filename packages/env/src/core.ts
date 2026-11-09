@@ -26,6 +26,13 @@ export const serverSchema = {
   // Fixed-window rate limit for the public contact endpoint.
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(5),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
+  // Stricter fixed-window limit for login attempts, to blunt brute force.
+  LOGIN_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
+  LOGIN_RATE_LIMIT_WINDOW_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(15 * 60_000),
   // Cloudflare Turnstile secret. When set, the contact form requires a token.
   TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
 };

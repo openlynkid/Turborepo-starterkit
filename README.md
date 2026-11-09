@@ -279,11 +279,13 @@ development and CI.
 ## Abuse protection
 
 `POST /api/contact` and the contact server action share a fixed-window rate limit
-per client IP (`RATE_LIMIT_MAX`, `RATE_LIMIT_WINDOW_MS`). To require a CAPTCHA,
-set `TURNSTILE_SECRET_KEY` and `NEXT_PUBLIC_TURNSTILE_SITE_KEY`; the form then
-renders a Cloudflare Turnstile widget and the server verifies the token. The
-in-process limiter protects a single instance — behind multiple instances add a
-shared limit at the edge as well.
+per client IP (`RATE_LIMIT_MAX`, `RATE_LIMIT_WINDOW_MS`). Login attempts have
+their own, stricter limit (`LOGIN_RATE_LIMIT_MAX`, `LOGIN_RATE_LIMIT_WINDOW_MS`).
+To require a CAPTCHA, set `TURNSTILE_SECRET_KEY` and
+`NEXT_PUBLIC_TURNSTILE_SITE_KEY`; the form then renders a Cloudflare Turnstile
+widget and the server verifies the token. The in-process limiter protects a
+single instance — behind multiple instances add a shared limit at the edge as
+well.
 
 ## Health & observability
 

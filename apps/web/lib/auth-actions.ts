@@ -1,8 +1,9 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { getClientIp, loginRateLimiter } from "@/lib/rate-limit";
 import {
   createSessionToken,
   isAuthEnabled,
@@ -15,7 +16,9 @@ export type LoginState = { error?: string };
 
 /**
  * Validates the submitted credentials and, on success, sets a signed session
- * cookie. Returns a user-safe error otherwise.
+ * cookie. Returns a user-safe error otherwise. Failed attempts are rate-limited
+ * per client IP so online password guessing against the admin account is
+ * throttled.
  */
 export async function login(
   _prevState: LoginState,
@@ -23,6 +26,14 @@ export async function login(
 ): Promise<LoginState> {
   if (!isAuthEnabled()) {
     return { error: "Authentication is not configured on this deployment." };
+  }
+
+  const requestHeaders = await headers();
+  const limit = loginRateLimiter.check(getClientIp(requestHeaders));
+  if (!limit.ok) {
+    return {
+      error: `Too many attempts. Please try again in ${limit.retryAfterSeconds}s.`,
+    };
   }
 
   const email = String(formData.get("email") ?? "");

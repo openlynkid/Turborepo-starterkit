@@ -74,6 +74,15 @@ export const contactRateLimiter = createRateLimiter({
 });
 
 /**
+ * Separate, stricter limiter for login attempts. A fixed window per client IP
+ * blunts online password guessing against the single admin account.
+ */
+export const loginRateLimiter = createRateLimiter({
+  max: env.LOGIN_RATE_LIMIT_MAX,
+  windowMs: env.LOGIN_RATE_LIMIT_WINDOW_MS,
+});
+
+/**
  * Best-effort client IP from proxy headers. Falls back to a shared bucket so
  * a missing header still hits a limit instead of bypassing it.
  */

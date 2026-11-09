@@ -55,6 +55,10 @@ addresses. Re-check them with `pnpm audit` whenever dependencies are bumped.
   `/messages` and `/settings`. The session is a signed, `HttpOnly`, `SameSite=Lax`
   cookie verified by `proxy.ts` and again in the `(app)` layout. When these
   variables are unset the app stays open (local development and CI).
+- Login attempts are rate-limited per client IP (fixed window, `LOGIN_RATE_LIMIT_MAX`
+  / `LOGIN_RATE_LIMIT_WINDOW_MS`) to blunt online password guessing against the
+  admin account. The limiter is in-process, so add a shared limit at the edge
+  behind multiple instances.
 - The public contact endpoint is rate-limited per client IP (fixed window,
   `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_MS`). The limiter is in-process, so
   behind multiple instances add a shared limit at the edge (for example Vercel
