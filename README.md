@@ -33,7 +33,12 @@ Each package and app is 100% [TypeScript](https://www.typescriptlang.org/).
 ## Requirements
 
 - Node.js >= 24
-- pnpm >= 9 (`corepack enable` or `npm i -g pnpm`)
+- pnpm 11 (`corepack enable` then pnpm is pinned via the `packageManager` field)
+
+> **Note:** pnpm 11 enforces a supply-chain policy (`minimumReleaseAge`) that refuses
+> packages published within the last 24 hours. If `pnpm install --frozen-lockfile` fails with
+> `ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION`, the lockfile has stale entries — regenerate it
+> with `pnpm clean --lockfile && pnpm install` using the pinned pnpm version.
 
 ## Getting started
 
