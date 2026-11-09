@@ -28,6 +28,13 @@ const nextConfig = {
   transpilePackages: ["@repo/ui", "@repo/db"],
   serverExternalPackages: ["postgres"],
   poweredByHeader: false,
+  // Next.js blocks cross-origin requests to dev assets (HMR) by default. Set
+  // ALLOWED_DEV_ORIGINS to a comma-separated list of hostnames when exposing
+  // the dev server through a tunnel or remote host.
+  allowedDevOrigins: (process.env.ALLOWED_DEV_ORIGINS ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean),
   async headers() {
     return [
       {
