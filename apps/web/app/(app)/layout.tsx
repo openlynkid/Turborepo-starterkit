@@ -31,7 +31,7 @@ export default async function AppLayout({
   return (
     <div className="min-h-svh bg-background">
       <div className="mx-auto flex min-h-svh w-full max-w-7xl">
-        <aside className="hidden w-64 shrink-0 flex-col border-r md:flex">
+        <aside className="obsidia-glass hidden w-64 shrink-0 flex-col border-r md:flex">
           <div className="flex h-14 items-center border-b px-4">
             <Link href="/" className="font-semibold tracking-tight">
               {site.name}

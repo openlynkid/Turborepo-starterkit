@@ -151,4 +151,22 @@ test.describe("component library", () => {
       page.getByRole("checkbox", { name: "Accept terms" }),
     ).toBeVisible();
   });
+
+  test("renders the obsidia surface utilities", async ({ page }) => {
+    await page.goto("/components");
+    await expect(page.getByRole("heading", { name: "Surfaces" })).toBeVisible();
+    await expect(page.getByTestId("obsidia-glass")).toBeVisible();
+    await expect(page.getByTestId("obsidia-glass-hover")).toBeVisible();
+
+    // The glass card must stay readable: its background must not be the
+    // dark-only rgba(18, 18, 24, 0.7) while the theme is light.
+    const background = await page
+      .getByTestId("obsidia-glass")
+      .evaluate((el) => getComputedStyle(el).backgroundColor);
+    const isDarkTheme = await page
+      .locator("html")
+      .evaluate((el) => el.classList.contains("dark"));
+    expect(isDarkTheme).toBe(false);
+    expect(background).not.toBe("rgba(18, 18, 24, 0.7)");
+  });
 });

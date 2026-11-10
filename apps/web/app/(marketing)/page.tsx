@@ -1,7 +1,6 @@
 import { ArrowRight, Boxes, Sparkles, Zap } from "lucide-react";
 import Link from "next/link";
 
-import { Badge } from "@repo/ui/components/ui/badge";
 import { Button } from "@repo/ui/components/ui/button";
 import {
   Card,
@@ -37,9 +36,13 @@ const features = [
 export default function Home() {
   return (
     <>
-      <section className="mx-auto max-w-5xl px-4">
-        <div className="flex flex-col items-start gap-6 py-20 sm:py-28">
-          <Badge variant="secondary">pnpm + Next.js + shadcn/ui</Badge>
+      <section className="relative mx-auto max-w-5xl px-4">
+        <div
+          aria-hidden
+          className="obsidia-glow-radial -top-10 left-1/2 h-72 w-72 -translate-x-1/2"
+        />
+        <div className="relative flex flex-col items-start gap-6 py-20 sm:py-28">
+          <span className="obsidia-pill">pnpm + Next.js + shadcn/ui</span>
           <h1 className="max-w-3xl text-4xl font-bold tracking-tight sm:text-6xl">
             Build faster with a modern monorepo starter kit
           </h1>
@@ -63,7 +66,10 @@ export default function Home() {
 
       <section className="mx-auto grid max-w-5xl gap-6 px-4 pb-24 sm:grid-cols-2 lg:grid-cols-3">
         {features.map((feature) => (
-          <Card key={feature.title}>
+          <Card
+            key={feature.title}
+            className="obsidia-glass obsidia-glass-hover"
+          >
             <CardHeader>
               <feature.icon className="mb-2 size-6 text-primary" />
               <CardTitle>{feature.title}</CardTitle>

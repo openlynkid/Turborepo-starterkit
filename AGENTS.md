@@ -274,3 +274,41 @@ All features stay **opt-in**, so local dev and CI need no new setup.
 - **Dev origins.** Next 16 blocks cross-origin dev assets; set
   `ALLOWED_DEV_ORIGINS` (comma-separated hostnames, declared in `turbo.json`
   `globalEnv`) when exposing `next dev` via a tunnel.
+
+## Theme swap (OpenLynk)
+
+- `packages/ui/src/styles/globals.css` now mirrors
+  `openlynk-v2/src/app/globals.css`: neutral OKLCH palette (light) + a blue-tinted
+  dark palette (`oklch(0.12 0.012 260)` etc.), `@theme inline` radius scale
+  (`--radius-sm` = `radius * 0.6` … `--radius-4xl` = `radius * 2.6`), and the
+  `obsidia-glass` / `obsidia-glass-hover` / `obsidia-pill` / `obsidia-glow-radial`
+  utilities (renamed from the upstream `rune-*` prefix).
+- **The `obsidia-*` utilities are theme-aware, not dark-only.** Upstream hardcodes
+  `rgba(18, 18, 24, …)` glass + white text, which is unreadable on this app's
+  light theme. They now read `--obsidia-*` tokens declared in `:root` (light) and
+  `.dark`; the dark values are byte-identical to upstream, the light values invert
+  to a white glass surface with slate borders/text. Keep new usages in mind when
+  editing those tokens.
+- Applied in the app: hero `obsidia-pill` + decorative `obsidia-glow-radial` and
+  `obsidia-glass obsidia-glass-hover` feature cards
+  (`apps/web/app/(marketing)/page.tsx`), `obsidia-glass` on the marketing header
+  (`components/site-header.tsx`) and the app sidebar (`app/(app)/layout.tsx`), and
+  a **Surfaces** section in `components/ui-showcase.tsx` that exercises all three
+  (covered by the "renders the obsidia surface utilities" e2e test, which also
+  asserts the light-theme glass is not the dark-only color).
+- The new file imports `shadcn/tailwind.css`, so `shadcn` (catalog `^4.23.0`) is a
+  `@repo/ui` dependency. That import supplies the shadcn custom variants
+  (`data-open`, `data-closed`, `data-checked`, `data-unchecked`, `data-selected`,
+  `data-disabled`, `data-active`, `data-horizontal`, `data-vertical`) plus the
+  `no-scrollbar`, `scroll-fade*` and `shimmer*` utilities. Only the `scroll-fade`
+  utilities ship into the app CSS today (Tailwind emits utilities on use).
+- Kept the two `@source` lines (`apps/**` + `packages/**`) from the previous file —
+  the CSS lives in `packages/ui` but must scan the whole monorepo. The only
+  difference from the upstream file is those two directives.
+- Fonts: the file keys `--font-sans` off a `--font-sans` var, but `apps/web`
+  registers Geist as `--font-geist-sans` / `--font-geist-mono` (matching upstream's
+  `--font-geist-mono`). So `--font-mono` picks up Geist Mono; the sans fallback
+  stack is used. Point `Geist({ variable: "--font-sans" })` if the sans font
+  should follow too.
+- Verified: `pnpm build`, `check-types`, `lint`, `test` (45 unit), `test:e2e`
+  (28) and `pnpm format:check` all green.

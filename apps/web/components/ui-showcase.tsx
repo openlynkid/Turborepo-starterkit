@@ -219,6 +219,44 @@ export function UiShowcase() {
           ))}
         </Accordion>
       </div>
+
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">Surfaces</h2>
+          <p className="text-sm text-muted-foreground">
+            The shared <code className="font-mono">obsidia-*</code> utilities
+            from <code className="font-mono">@repo/ui/globals.css</code>.
+          </p>
+        </div>
+
+        <div className="relative overflow-hidden rounded-xl border p-6">
+          <div
+            aria-hidden
+            className="obsidia-glow-radial -top-16 left-1/2 h-64 w-64 -translate-x-1/2"
+          />
+          <div className="relative grid gap-4 sm:grid-cols-2">
+            <div
+              data-testid="obsidia-glass"
+              className="obsidia-glass rounded-2xl border-white/10 p-5"
+            >
+              <span className="obsidia-pill">obsidia-pill</span>
+              <p className="mt-4 text-sm text-muted-foreground">
+                Static glass card. Uses{" "}
+                <code className="font-mono">.obsidia-glass</code>.
+              </p>
+            </div>
+            <div
+              data-testid="obsidia-glass-hover"
+              className="obsidia-glass obsidia-glass-hover rounded-2xl border-white/10 p-5"
+            >
+              <span className="obsidia-pill">obsidia-glass-hover</span>
+              <p className="mt-4 text-sm text-muted-foreground">
+                Interactive glass card. Lifts and glows on hover.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
